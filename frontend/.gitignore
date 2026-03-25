@@ -1,0 +1,15 @@
+# ── Node / npm ───────────────────────
+node_modules/
+dist/
+.cache/
+
+# ── Environment / Secrets ────────────
+.env
+.env.*
+*.env
+
+# ── IDE / OS ─────────────────────────
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db
