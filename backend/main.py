@@ -11,7 +11,7 @@ from datetime import datetime
 from database import get_db, TripPlan, MLModelResult, TravelDataset, Base, engine
 from schemas import TripRequest, TripResponse, MLModelResultResponse, MLComparisonResponse
 from gemini_service import generate_itinerary
-from ml_model_comparison import generate_synthetic_dataset, train_and_compare_models, predict_destination
+# from ml_model_comparison import generate_synthetic_dataset, train_and_compare_models, predict_destination
 from weather_service import get_weather
 
 app = FastAPI(
@@ -42,60 +42,23 @@ ml_state = {
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize ML models and seed dataset on startup."""
-    print("🚀 Travel Genie AI starting up...")
+    """Initialize database on startup (ML disabled)."""
+    print("🚀 Travel Genie AI starting up (Minimal Mode)...")
     Base.metadata.create_all(bind=engine)
+    # ML Model training disabled to match minimal requirements.txt
+    print("⚠️ ML Model training skipped (dependencies removed).")
+    ml_state["initialized"] = False
 
-    # Generate dataset and train models
-    print("📊 Generating synthetic travel dataset...")
-    dataset = generate_synthetic_dataset(n_samples=2000)
-
-    print("🤖 Training and comparing ML models...")
-    results, scaler, label_encoder, best_model = train_and_compare_models(dataset)
-
-    ml_state["scaler"] = scaler
-    ml_state["label_encoder"] = label_encoder
-    ml_state["best_model"] = best_model
-    ml_state["best_model_name"] = results[0]["model_name"]
-    ml_state["results"] = results
-    ml_state["initialized"] = True
-
-    # Store results in database
+    # Store results in database (Empty)
     db = next(get_db())
     try:
         # Clear old results
         db.query(MLModelResult).delete()
-        for r in results:
-            db_result = MLModelResult(
-                model_name=r["model_name"],
-                accuracy=r["accuracy"],
-                precision_score=r["precision_score"],
-                recall=r["recall"],
-                f1_score=r["f1_score"],
-                training_time_ms=r["training_time_ms"],
-            )
-            db.add(db_result)
-
-        # Store dataset in database
         db.query(TravelDataset).delete()
-        for _, row in dataset.iterrows():
-            db_row = TravelDataset(
-                age=int(row['age']),
-                budget=float(row['budget']),
-                duration=int(row['duration']),
-                group_size=int(row['group_size']),
-                travel_style_encoded=int(row['travel_style']),
-                preferred_climate=int(row['preferred_climate']),
-                destination_category=str(row['destination_category']),
-            )
-            db.add(db_row)
-
         db.commit()
-        print(f"✅ ML models trained. Best: {results[0]['model_name']} (F1: {results[0]['f1_score']:.4f})")
-        print(f"📦 {len(dataset)} records stored in database.")
     except Exception as e:
         db.rollback()
-        print(f"❌ Database seed error: {e}")
+        print(f"❌ Database error: {e}")
     finally:
         db.close()
 
@@ -138,22 +101,22 @@ async def plan_trip(trip: TripRequest, db: Session = Depends(get_db)):
         duration_days = 7
 
     # ML Prediction
-    ml_recommendation = ""
-    if ml_state["initialized"]:
-        user_features = {
-            "age": 30,  # Default age since not collected in form
-            "budget": trip.budget,
-            "duration": duration_days,
-            "group_size": trip.people,  # Updated from Default
-            "travel_style": trip.travel_style,
-            "preferred_climate": "tropical",  # Default
-        }
-        ml_recommendation = predict_destination(
-            user_features,
-            ml_state["scaler"],
-            ml_state["label_encoder"],
-            ml_state["best_model"]
-        )
+    ml_recommendation = "ML recommendation currently disabled."
+    # if ml_state["initialized"]:
+    #     user_features = {
+    #         "age": 30,  # Default age since not collected in form
+    #         "budget": trip.budget,
+    #         "duration": duration_days,
+    #         "group_size": trip.people,  # Updated from Default
+    #         "travel_style": trip.travel_style,
+    #         "preferred_climate": "tropical",  # Default
+    #     }
+    #     ml_recommendation = predict_destination(
+    #         user_features,
+    #         ml_state["scaler"],
+    #         ml_state["label_encoder"],
+    #         ml_state["best_model"]
+    #     )
 
     # Fetch weather context
     weather_info_str = ""
@@ -270,69 +233,17 @@ async def get_ml_comparison(db: Session = Depends(get_db)):
 # ─── User Feedback Performance ──────────────────────────────────
 @app.get("/api/ml/user-performance")
 async def get_user_performance(db: Session = Depends(get_db)):
-    """Measure model performance based on historical user satisfaction scores."""
-    from sqlalchemy import func
-    
-    # Aggregate data by model
-    stats = db.query(
-        TripPlan.ml_model_used,
-        func.avg(TripPlan.satisfaction_score).label("avg_score"),
-        func.count(TripPlan.id).label("total")
-    ).filter(TripPlan.satisfaction_score.isnot(None)).group_by(TripPlan.ml_model_used).all()
-    
-    # Calculate success rate (score >= 4 is considered a success)
-    # Using a simple subquery-friendly approach
-    results = []
-    for s in stats:
-        # For each model, find how many times score was >= 4
-        successes = db.query(TripPlan).filter(
-            TripPlan.ml_model_used == s.ml_model_used,
-            TripPlan.satisfaction_score >= 4
-        ).count()
-        
-        accuracy = (successes / s.total) if s.total > 0 else 0
-        results.append({
-            "model_name": s.ml_model_used,
-            "avg_satisfaction": round(float(s.avg_score), 2) if s.avg_score else 0,
-            "total_reviews": s.total,
-            "user_accuracy": round(accuracy * 100, 2)
-        })
-    
-    # Sort by accuracy descending
-    results.sort(key=lambda x: x['user_accuracy'], reverse=True)
-    return results
+    """Measure model performance based on historical user satisfaction scores (ML disabled)."""
+    # from sqlalchemy import func
+    return [] # ML disabled
 
 
 
 # ─── Retrain Models ─────────────────────────────────────────────
 @app.post("/api/ml/retrain")
 async def retrain_models(db: Session = Depends(get_db)):
-    """Retrain all ML models with fresh data."""
-    dataset = generate_synthetic_dataset(n_samples=2000)
-    results, scaler, label_encoder, best_model = train_and_compare_models(dataset)
-
-    ml_state["scaler"] = scaler
-    ml_state["label_encoder"] = label_encoder
-    ml_state["best_model"] = best_model
-    ml_state["best_model_name"] = results[0]["model_name"]
-    ml_state["results"] = results
-    ml_state["initialized"] = True
-
-    # Update database
-    db.query(MLModelResult).delete()
-    for r in results:
-        db_result = MLModelResult(
-            model_name=r["model_name"],
-            accuracy=r["accuracy"],
-            precision_score=r["precision_score"],
-            recall=r["recall"],
-            f1_score=r["f1_score"],
-            training_time_ms=r["training_time_ms"],
-        )
-        db.add(db_result)
-    db.commit()
-
-    return {"message": "Models retrained successfully", "best_model": results[0]["model_name"]}
+    """Retrain all ML models (Disabled)."""
+    return {"message": "ML training is currently disabled due to dependency constraints."}
 
 
 # ─── Dataset Stats ──────────────────────────────────────────────
