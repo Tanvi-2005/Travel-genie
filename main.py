@@ -7,6 +7,9 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime
+import os
+
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 from database import get_db, TripPlan, MLModelResult, TravelDataset, Base, engine
 from schemas import TripRequest, TripResponse, MLModelResultResponse, MLComparisonResponse
@@ -16,7 +19,8 @@ from weather_service import get_weather
 
 app = FastAPI(
     title="Travel Genie AI",
-    description="AI-Powered Personalized Trip Planning Assistant",
+    description=
+    "AI-Powered Personalized Trip Planning Assistant",
     version="1.0.0"
 )
 
@@ -74,13 +78,29 @@ async def root():
 
 
 # ─── Weather Information ─────────────────────────────────────────
+@app.get("/weather/{city}")
+async def fetch_weather_api(city: str):
+    """Fetch weather securely using path parameters."""
+    if not WEATHER_API_KEY:
+        raise HTTPException(status_code=500, detail="Weather API key missing.")
+    
+    import requests
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return {
+            "temp": data["main"]["temp"],
+            "description": data["weather"][0]["description"],
+            "city": data["name"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/weather")
-async def fetch_weather(destination: str):
-    """Fetch weather securely from the backend."""
-    weather = get_weather(destination)
-    if not weather:
-        raise HTTPException(status_code=404, detail="Weather data not found or API key missing.")
-    return weather
+async def fetch_weather_legacy(destination: str):
+    """Legacy support for query parameters."""
+    return await fetch_weather_api(destination)
 
 
 # ─── Trip Planning ───────────────────────────────────────────────
