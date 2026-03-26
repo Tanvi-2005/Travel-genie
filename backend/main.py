@@ -8,6 +8,7 @@ from flask_cors import CORS
 from sqlalchemy.orm import Session
 from datetime import datetime
 import os
+import requests
 from dotenv import load_dotenv
 
 from database import SessionLocal, TripPlan, MLModelResult, TravelDataset, Base, engine
@@ -19,7 +20,7 @@ load_dotenv()
 
 app = Flask(__name__)
 # CORS for frontend
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialization logic on first request or app start
 with app.app_context():
@@ -43,20 +44,35 @@ def root():
     })
 
 # ─── Weather Information ─────────────────────────────────────────
-@app.route("/api/weather", methods=["GET"])
+@app.route("/weather/<city>")
+def get_weather_api(city):
+    WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+    if not WEATHER_API_KEY:
+        return jsonify({"error": "API key missing"})
+
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+    
+    try:
+        response = requests.get(url)
+        data = response.json()
+        return jsonify({
+            "temp": data["main"]["temp"],
+            "description": data["weather"][0]["description"],
+            "city": data["name"]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Legacy route for compatibility with query parameters
+@app.route("/weather", methods=["GET"])
 def fetch_weather():
-    """Fetch weather securely from the backend."""
     destination = request.args.get("destination")
     if not destination:
-         return jsonify({"error": "Destination is required"}), 400
-    
-    weather = get_weather(destination)
-    if not weather:
-        return jsonify({"error": "Weather data not found or API key missing."}), 404
-    return jsonify(weather)
+        return jsonify({"error": "Destination is required"}), 400
+    return get_weather_api(destination)
 
 # ─── Trip Planning ───────────────────────────────────────────────
-@app.route("/api/plan-trip", methods=["POST"])
+@app.route("/plan-trip", methods=["POST"])
 def plan_trip():
     """
     Plan a trip: generates a Gemini-powered itinerary.
@@ -152,7 +168,7 @@ def plan_trip():
         db.close()
 
 # ─── Get All Trips ──────────────────────────────────────────────
-@app.route("/api/trips", methods=["GET"])
+@app.route("/trips", methods=["GET"])
 def get_all_trips():
     """Retrieve all trip plans from the database."""
     db = SessionLocal()
@@ -171,7 +187,7 @@ def get_all_trips():
         db.close()
 
 # ─── Get Single Trip ────────────────────────────────────────────
-@app.route("/api/trips/<int:trip_id>", methods=["GET"])
+@app.route("/trips/<int:trip_id>", methods=["GET"])
 def get_trip(trip_id):
     """Retrieve a specific trip plan."""
     db = SessionLocal()
@@ -192,7 +208,7 @@ def get_trip(trip_id):
         db.close()
 
 # ─── Delete Trip ─────────────────────────────────────────────────
-@app.route("/api/trips/<int:trip_id>", methods=["DELETE"])
+@app.route("/trips/<int:trip_id>", methods=["DELETE"])
 def delete_trip(trip_id):
     """Delete a trip plan."""
     db = SessionLocal()
@@ -210,7 +226,7 @@ def delete_trip(trip_id):
         db.close()
 
 # ─── Submit Feedback ──────────────────────────────────────────────
-@app.route("/api/trips/<int:trip_id>/feedback", methods=["POST"])
+@app.route("/trips/<int:trip_id>/feedback", methods=["POST"])
 def submit_feedback(trip_id):
     """Update the satisfaction score (rating) for a trip."""
     score = request.args.get("satisfaction_score", type=float)
@@ -233,22 +249,22 @@ def submit_feedback(trip_id):
         db.close()
 
 # ─── ML Model Comparison (Disabled) ──────────────────────────────
-@app.route("/api/ml/comparison", methods=["GET"])
+@app.route("/ml/comparison", methods=["GET"])
 def get_ml_comparison():
     return jsonify({"best_model": "N/A", "models": []})
 
 # ─── User Feedback Performance (Disabled) ────────────────────────
-@app.route("/api/ml/user-performance", methods=["GET"])
+@app.route("/ml/user-performance", methods=["GET"])
 def get_user_performance():
     return jsonify([])
 
 # ─── Retrain Models (Disabled) ──────────────────────────────────
-@app.route("/api/ml/retrain", methods=["POST"])
+@app.route("/ml/retrain", methods=["POST"])
 def retrain_models():
     return jsonify({"message": "ML training is currently disabled."})
 
 # ─── Dataset Stats (Disabled) ───────────────────────────────────
-@app.route("/api/dataset/stats", methods=["GET"])
+@app.route("/dataset/stats", methods=["GET"])
 def get_dataset_stats():
     return jsonify({
         "total_records": 0,
