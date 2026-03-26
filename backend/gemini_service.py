@@ -74,26 +74,21 @@ All costs MUST be in Indian Rupees (₹). Format the response with clear day hea
 """
 
     try:
-        model = genai.GenerativeModel('models/gemini-2.5-flash')
+        # Use stable gemini-1.5-flash as primary for reliability
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        print(f"❌ Gemini 2.5 error: {e}")
+        print(f"❌ Gemini 1.5 error: {e}")
         try:
-            print("🔄 Attempting backup with gemini-2.0-flash...")
-            model = genai.GenerativeModel('models/gemini-2.0-flash')
+            # Attempt experimental backup
+            print("🔄 Attempting backup with gemini-2.0-flash-exp...")
+            model = genai.GenerativeModel('models/gemini-2.0-flash-exp')
             response = model.generate_content(prompt)
             return response.text
         except Exception as e2:
             print(f"❌ Gemini 2.0 error: {e2}")
-            try:
-                print("🔄 Attempting backup with gemini-1.5-flash...")
-                model = genai.GenerativeModel('models/gemini-1.5-flash')
-                response = model.generate_content(prompt)
-                return response.text
-            except Exception as e3:
-                print(f"❌ Backup model error: {e3}")
-                return _generate_fallback_itinerary(destination, budget, duration_days, travel_style, interests, ml_recommendation, language, people, start_date, end_date)
+            return _generate_fallback_itinerary(destination, budget, duration_days, travel_style, interests, ml_recommendation, language, people, start_date, end_date)
 
 
 def _generate_fallback_itinerary(destination, budget, duration_days, travel_style, interests, ml_recommendation, language, people, start_date, end_date):
