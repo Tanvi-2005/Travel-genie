@@ -7,6 +7,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
 import os
 
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
@@ -79,31 +80,19 @@ async def root():
 
 # ─── Weather Information ─────────────────────────────────────────
 @app.get("/weather/{city}")
-async def fetch_weather_api(city: str):
-    """Fetch weather securely using path parameters."""
-    if not WEATHER_API_KEY:
-        raise HTTPException(status_code=500, detail="Weather API key missing.")
-    
-    import requests
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
-    try:
-        response = requests.get(url)
-        data = response.json()
-        return {
-            "temp": data["main"]["temp"],
-            "description": data["weather"][0]["description"],
-            "icon": data["weather"][0]["icon"],
-            "city": data["name"],
-            "humidity": data["main"]["humidity"],
-            "wind_speed": data["wind"]["speed"]
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+@app.get("/weather")
 @app.get("/api/weather")
-async def fetch_weather_legacy(destination: str):
-    """Legacy support for query parameters."""
-    return await fetch_weather_api(destination)
+async def fetch_weather_api(city: Optional[str] = None, destination: Optional[str] = None):
+    """Fetch weather for path, query, or legacy /api/ endpoints."""
+    target_city = city or destination
+    if not target_city:
+         raise HTTPException(status_code=400, detail="City or Destination is required")
+         
+    weather_data = get_weather(target_city)
+    if not weather_data:
+        raise HTTPException(status_code=404, detail="Weather data not found or API key missing.")
+        
+    return weather_data
 
 
 # ─── Trip Planning ───────────────────────────────────────────────

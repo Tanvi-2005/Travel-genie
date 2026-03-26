@@ -45,34 +45,23 @@ def root():
 
 # ─── Weather Information ─────────────────────────────────────────
 @app.route("/weather/<city>")
-def get_weather_api(city):
-    WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-    if not WEATHER_API_KEY:
-        return jsonify({"error": "API key missing"})
-
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+@app.route("/weather")
+def get_weather_api(city=None):
+    """Fetch weather securely for path or query parameters."""
+    if city is None:
+        city = request.args.get("destination")
     
-    try:
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        return jsonify({
-            "temp": data["main"]["temp"],
-            "description": data["weather"][0]["description"],
-            "icon": data["weather"][0]["icon"],
-            "city": data["name"],
-            "humidity": data["main"]["humidity"],
-            "wind_speed": data["wind"]["speed"]
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if not city:
+        return jsonify({"error": "City/Destination is required"}), 400
+        
+    weather_data = get_weather(city)
+    if not weather_data:
+        return jsonify({"error": "Weather data not found or API key missing."}), 404
+        
+    print(f"☀️ Weather Success for {city}: {weather_data}") # For Render Logs
+    return jsonify(weather_data)
 
-# Legacy route for compatibility with query parameters
-@app.route("/weather", methods=["GET"])
-def fetch_weather():
-    destination = request.args.get("destination")
-    if not destination:
-        return jsonify({"error": "Destination is required"}), 400
-    return get_weather_api(destination)
+# Legacy route handler removed (merged above)
 
 # ─── Trip Planning ───────────────────────────────────────────────
 @app.route("/plan-trip", methods=["POST"])
