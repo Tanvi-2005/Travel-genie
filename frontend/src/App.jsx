@@ -88,29 +88,29 @@ const translations = {
 }
 
 
-const API_BASE = window.location.origin.includes('localhost') 
-  ? 'http://localhost:8000/api' 
-  : 'https://your-render-backend.onrender.com/api'
+const API_BASE = window.location.origin.includes('localhost')
+  ? 'http://localhost:8000/api'
+  : ''https://travel-genie.onrender.com/api''
 
 
-/* ═══════════════════════════════════════════════════════
-   Travel Genie AI — Main Application
-   ═══════════════════════════════════════════════════════ */
-export default function App() {
-  const [page, setPage] = useState('home')
-  const [language, setLanguage] = useState('English')
-  
-  const t = translations[language]
+    /* ═══════════════════════════════════════════════════════
+       Travel Genie AI — Main Application
+       ═══════════════════════════════════════════════════════ */
+    export default function App() {
+      const [page, setPage] = useState('home')
+      const [language, setLanguage] = useState('English')
 
-  return (
-    <>
-      <Navbar page={page} setPage={setPage} language={language} setLanguage={setLanguage} t={t} />
-      {page === 'home' && <HomePage setPage={setPage} t={t} />}
-      {page === 'plan' && <PlanPage language={language} setLanguage={setLanguage} t={t} />}
-      {page === 'history' && <HistoryPage t={t} />}
-    </>
-  )
-}
+      const t = translations[language]
+
+      return (
+        <>
+          <Navbar page={page} setPage={setPage} language={language} setLanguage={setLanguage} t={t} />
+          {page === 'home' && <HomePage setPage={setPage} t={t} />}
+          {page === 'plan' && <PlanPage language={language} setLanguage={setLanguage} t={t} />}
+          {page === 'history' && <HistoryPage t={t} />}
+        </>
+      )
+    }
 
 /* ─── Navbar ─────────────────────────────────────────── */
 function Navbar({ page, setPage, language, setLanguage, t }) {
@@ -293,9 +293,9 @@ function PlanPage({ language, setLanguage, t }) {
           <p>{t.planSub}</p>
           <div style={{ marginTop: '1rem', padding: '0.5rem 1rem', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', display: 'inline-flex', alignItems: 'center', gap: '1rem' }}>
             <span style={{ fontWeight: 600, color: '#334155' }}>🌐 Select Language:</span>
-            <select 
-              className="form-select" 
-              value={language} 
+            <select
+              className="form-select"
+              value={language}
               onChange={(e) => setLanguage(e.target.value)}
               style={{ width: 'auto', padding: '0.4rem', fontSize: '1rem', border: '1px solid #cbd5e1' }}
             >
@@ -474,7 +474,7 @@ function PlanPage({ language, setLanguage, t }) {
                 Budget: <strong>₹{result.budget?.toLocaleString('en-IN')}</strong> | Trip #{result.id} | Language: {result.language || 'English'}
               </div>
               <div className="itinerary-content">
-                <div dangerouslySetInnerHTML={{__html: result.generated_itinerary.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}} />
+                <div dangerouslySetInnerHTML={{ __html: result.generated_itinerary.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
               </div>
 
               {/* Feedback Section */}
@@ -664,7 +664,7 @@ function HistoryPage({ t }) {
               <span>🕐 {new Date(selectedTrip.created_at).toLocaleDateString()}</span>
             </div>
             <div className="itinerary-content">
-              <div dangerouslySetInnerHTML={{__html: selectedTrip.generated_itinerary.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')}} />
+              <div dangerouslySetInnerHTML={{ __html: selectedTrip.generated_itinerary.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<b>$1</b>') }} />
             </div>
           </div>
         </div>
