@@ -53,12 +53,15 @@ def get_weather_api(city):
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
     
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         data = response.json()
         return jsonify({
             "temp": data["main"]["temp"],
             "description": data["weather"][0]["description"],
-            "city": data["name"]
+            "icon": data["weather"][0]["icon"],
+            "city": data["name"],
+            "humidity": data["main"]["humidity"],
+            "wind_speed": data["wind"]["speed"]
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500

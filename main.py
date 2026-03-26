@@ -92,7 +92,10 @@ async def fetch_weather_api(city: str):
         return {
             "temp": data["main"]["temp"],
             "description": data["weather"][0]["description"],
-            "city": data["name"]
+            "icon": data["weather"][0]["icon"],
+            "city": data["name"],
+            "humidity": data["main"]["humidity"],
+            "wind_speed": data["wind"]["speed"]
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
