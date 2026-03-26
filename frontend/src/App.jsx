@@ -89,28 +89,28 @@ const translations = {
 
 
 const API_BASE = window.location.origin.includes('localhost')
-  ? 'http://localhost:8000/api'
-  : ''https://travel-genie.onrender.com/api''
+  ? 'http://localhost:8000'
+  : 'https://travel-genie.onrender.com';
 
 
-    /* ═══════════════════════════════════════════════════════
-       Travel Genie AI — Main Application
-       ═══════════════════════════════════════════════════════ */
-    export default function App() {
-      const [page, setPage] = useState('home')
-      const [language, setLanguage] = useState('English')
+/* ═══════════════════════════════════════════════════════
+   Travel Genie AI — Main Application
+   ═══════════════════════════════════════════════════════ */
+export default function App() {
+  const [page, setPage] = useState('home')
+  const [language, setLanguage] = useState('English')
 
-      const t = translations[language]
+  const t = translations[language]
 
-      return (
-        <>
-          <Navbar page={page} setPage={setPage} language={language} setLanguage={setLanguage} t={t} />
-          {page === 'home' && <HomePage setPage={setPage} t={t} />}
-          {page === 'plan' && <PlanPage language={language} setLanguage={setLanguage} t={t} />}
-          {page === 'history' && <HistoryPage t={t} />}
-        </>
-      )
-    }
+  return (
+    <>
+      <Navbar page={page} setPage={setPage} language={language} setLanguage={setLanguage} t={t} />
+      {page === 'home' && <HomePage setPage={setPage} t={t} />}
+      {page === 'plan' && <PlanPage language={language} setLanguage={setLanguage} t={t} />}
+      {page === 'history' && <HistoryPage t={t} />}
+    </>
+  )
+}
 
 /* ─── Navbar ─────────────────────────────────────────── */
 function Navbar({ page, setPage, language, setLanguage, t }) {
