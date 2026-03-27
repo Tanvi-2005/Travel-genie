@@ -4,16 +4,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 def get_weather(city: str):
     """Fetch current weather for a specific city using OpenWeatherMap API."""
-    if not WEATHER_API_KEY:
+    api_key = os.getenv("WEATHER_API_KEY")
+    if not api_key:
         print("⚠️ WEATHER_API_KEY is missing!")
         return None
         
     # OpenWeatherMap API URL
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
+    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()

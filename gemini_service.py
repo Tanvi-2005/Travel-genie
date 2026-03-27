@@ -9,17 +9,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 
 def configure_gemini():
     """Configure the Gemini API with the provided key."""
-    if not GEMINI_API_KEY or GEMINI_API_KEY == "YOUR_GEMINI_API_KEY_HERE":
-        print("⚠️ GEMINI_API_KEY is missing or invalid!")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key or api_key == "YOUR_GEMINI_API_KEY_HERE":
+        print("⚠️ GEMINI_API_KEY is missing or invalid in environment variables!")
         return False
-    print(f"✅ Configuring Gemini with key: {GEMINI_API_KEY[:5]}...")
-    genai.configure(api_key=GEMINI_API_KEY)
-    return True
+    
+    try:
+        print(f"✅ Configuring Gemini with key starting with: {api_key[:5]}...")
+        genai.configure(api_key=api_key)
+        return True
+    except Exception as e:
+        print(f"❌ Failed to configure Gemini API: {e}")
+        return False
 
 
 def generate_itinerary(destination: str, budget: float, duration_days: int,
@@ -77,17 +82,22 @@ All costs MUST be in Indian Rupees (₹). Format the response with clear day hea
         # Use stable gemini-1.5-flash as primary for reliability
         model = genai.GenerativeModel('models/gemini-1.5-flash')
         response = model.generate_content(prompt)
+        if not response or not response.text:
+            raise ValueError("Empty response from Gemini 1.5")
         return response.text
     except Exception as e:
-        print(f"❌ Gemini 1.5 error: {e}")
+        print(f"⚠️ Gemini 1.5 error: {e}")
         try:
             # Attempt experimental backup
             print("🔄 Attempting backup with gemini-2.0-flash-exp...")
             model = genai.GenerativeModel('models/gemini-2.0-flash-exp')
             response = model.generate_content(prompt)
+            if not response or not response.text:
+                raise ValueError("Empty response from Gemini 2.0")
             return response.text
         except Exception as e2:
-            print(f"❌ Gemini 2.0 error: {e2}")
+            print(f"❌ Gemini API Error (Primary and Backup failed): {e2}")
+            # The UI will show this fallback itinerary
             return _generate_fallback_itinerary(destination, budget, duration_days, travel_style, interests, ml_recommendation, language, people, start_date, end_date)
 
 
