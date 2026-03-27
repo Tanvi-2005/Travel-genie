@@ -88,9 +88,10 @@ const translations = {
 }
 
 
-const API_BASE = window.location.origin.includes('localhost')
+// Check if running on localhost or 127.0.0.1 for local testing
+const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1'))
   ? 'http://localhost:8000'
-  : 'https://travel-genie.onrender.com';
+  : 'https://travel-genie-tanvi-2005.onrender.com'; // 👈 YOUR ACTUAL RENDER BACKEND URL
 
 
 /* ═══════════════════════════════════════════════════════
@@ -258,12 +259,15 @@ function PlanPage({ language, setLanguage, t }) {
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to plan trip')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server responded with status ${res.status}`);
+      }
       const data = await res.json()
       setResult(data)
 
     } catch (err) {
-      setError(err.message || 'Something went wrong')
+      setError(`${err.message} (Tried reaching: ${API_BASE})`)
     } finally {
       setLoading(false)
     }
